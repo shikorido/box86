@@ -86,7 +86,7 @@ int NbDot(const char* name)
 
 void WrappedLib_CommonInit(library_t *lib) {
     lib->w.bridge = NewBridge();
-    
+
     lib->w.symbolmap = kh_init(symbolmap);
     lib->w.wsymbolmap = kh_init(symbolmap);
     lib->w.mysymbolmap = kh_init(symbolmap);
@@ -362,7 +362,7 @@ static void initEmulatedLib(const char* path, library_t *lib, box86context_t* co
             strcat(libname, path);
             if(FileIsX86ELF(libname))
                 if(loadEmulatedLib(libname, lib, context, verneeded))
-                    return;            
+                    return;
         }
 }
 
@@ -379,13 +379,14 @@ static void initDummyLib(library_t *lib)
 }
 
 static const char* essential_libs[] = {
-    "libc.so.6", "libpthread.so.0", "librt.so.1", "libGL.so.1", "libGL.so", "libX11.so.6", 
-    "libasound.so.2", "libdl.so.2", "libm.so.6", "libbsd.so.0", "libbsd.so", "ld-linux.so.2",
+    "libc.so.6", "libpthread.so.0", "librt.so.1", "libGL.so.1", "libGL.so", "libX11.so.6",
+    //"libasound.so.2", "libdl.so.2", "libm.so.6", "libbsd.so.0", "libbsd.so", "ld-linux.so.2",
+    "libasound.so.2", "libdl.so.2", "libm.so.6", "libbsd.so.0", "libbsd.so", "ld-linux.so.3",
     "libXxf86vm.so.1", "libXinerama.so.1", "libXrandr.so.2", "libXext.so.6", "libXfixes.so.3", "libXcursor.so.1",
     "libXrender.so.1", "libXft.so.2", "libXi.so.6", "libXss.so.1", "libXpm.so.4", "libXau.so.6", "libXdmcp.so.6",
     "libX11-xcb.so.1", "libxcb.so.1", "libxcb-xfixes.so.0", "libxcb-shape.so.0", "libxcb-shm.so.0", "libxcb-randr.so.0",
     "libxcb-image.so.0", "libxcb-keysyms.so.1", "libxcb-xtest.so.0", "libxcb-glx.so.0", "libxcb-dri2.so.0", "libxcb-dri3.so.0",
-    "libXtst.so.6", "libXt.so.6", "libXcomposite.so.1", "libXdamage.so.1", "libXmu.so.6", "libxkbcommon.so.0", 
+    "libXtst.so.6", "libXt.so.6", "libXcomposite.so.1", "libXdamage.so.1", "libXmu.so.6", "libxkbcommon.so.0",
     "libxkbcommon-x11.so.0", "libpulse-simple.so.0", "libpulse.so.0", "libvulkan.so.1", "libvulkan.so",
     "crashhandler.so", "libtcmalloc_minimal.so.0", "libtcmalloc_minimal.so.4"
 };
@@ -473,6 +474,9 @@ library_t *NewLibrary(const char* path, box86context_t* context, elfheader_t* ve
         notwrapped = 1;
     // And now, actually loading a library
     // look for native(wrapped) libs first
+    //qqq
+    notwrapped = 1;
+    //!qqq
     if(!notwrapped && !precise)
         initWrappedLib(lib, context);
     // then look for a native one
@@ -643,7 +647,7 @@ char* GetNameLib(library_t* lib)
 int IsSameLib(library_t* lib, const char* path)
 {
     int ret = 0;
-    if(!lib) 
+    if(!lib)
         return 0;
     if(lib->type==LIB_UNNKNOW)
         return 0;

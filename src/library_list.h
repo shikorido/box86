@@ -245,6 +245,11 @@ GO("libvorbis.so", libvorbis)
 GO("libogg.so", libogg)
 GO("libz.so", libz)
 GO("libandroid-shmem.so", androidshmem)
+//qqq
+GO("libjpeg.so", libjpeg)
+GO("libjpeg.so", libjpeg62)
+GO("libturbojpeg.so", turbojpeg)
+//!qqq
 #else
 GO("libc.so.6", libc)
 GO("libm.so.6", libm)

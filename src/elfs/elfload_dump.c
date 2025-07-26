@@ -45,7 +45,7 @@ const char* DumpSection(Elf32_Shdr *s, char* SST) {
         GO(SHT_GNU_ATTRIBUTES);
         GO(SHT_GNU_HASH);
         GO(SHT_GNU_LIBLIST);
-        #ifndef TERMUX
+        #if !(defined(ANDROID) || defined(TERMUX))
           GO(SHT_CHECKSUM);
         #endif
         GO(SHT_LOSUNW);
@@ -207,7 +207,7 @@ const char* DumpSym(elfheader_t *h, Elf32_Sym* sym, int version)
     static char buff[4096];
     const char* vername = (version==-1)?"(none)":((version==0)?"*local*":((version==1)?"*global*":GetSymbolVersion(h, version)));
     memset(buff, 0, sizeof(buff));
-    sprintf(buff, "\"%s\", value=%p, size=%d, info/other=%d/%d index=%d (ver=%d/%s)", 
+    sprintf(buff, "\"%s\", value=%p, size=%d, info/other=%d/%d index=%d (ver=%d/%s)",
         h->DynStr+sym->st_name, (void*)sym->st_value, sym->st_size,
         sym->st_info, sym->st_other, sym->st_shndx, version, vername);
     return buff;
@@ -254,7 +254,7 @@ void DumpSymTab(elfheader_t *h)
         const char* name = ElfName(h);
         printf_dump(LOG_NEVER, "ELF Dump SymTab(%d)=\n", h->numSymTab);
         for (uint32_t i=0; i<h->numSymTab; ++i)
-            printf_dump(LOG_NEVER, "  %s:SymTab[%d] = \"%s\", value=%p, size=%d, info/other=%d/%d index=%d\n", name, 
+            printf_dump(LOG_NEVER, "  %s:SymTab[%d] = \"%s\", value=%p, size=%d, info/other=%d/%d index=%d\n", name,
                 i, h->StrTab+h->SymTab[i].st_name, (void*)h->SymTab[i].st_value, h->SymTab[i].st_size,
                 h->SymTab[i].st_info, h->SymTab[i].st_other, h->SymTab[i].st_shndx);
         printf_dump(LOG_NEVER, "ELF Dump SymTab=====\n");
@@ -319,7 +319,7 @@ void DumpRelTable(elfheader_t *h, int cnt, Elf32_Rel *rel, const char* name)
         printf_dump(LOG_NEVER, "ELF Dump %s Table(%d) @%p\n", name, cnt, rel);
         for (int i = 0; i<cnt; ++i)
             printf_dump(LOG_NEVER, "  %s:Rel[%d] = %p (0x%X: %s, sym=0x%0X/%s)\n", elfname,
-                i, (void*)rel[i].r_offset, rel[i].r_info, DumpRelType(ELF32_R_TYPE(rel[i].r_info)), 
+                i, (void*)rel[i].r_offset, rel[i].r_info, DumpRelType(ELF32_R_TYPE(rel[i].r_info)),
                 ELF32_R_SYM(rel[i].r_info), IdxSymName(h, ELF32_R_SYM(rel[i].r_info)));
         printf_dump(LOG_NEVER, "ELF Dump Rel Table=====\n");
     }
@@ -332,8 +332,8 @@ void DumpRelATable(elfheader_t *h, int cnt, Elf32_Rela *rela, const char* name)
         printf_dump(LOG_NEVER, "ELF Dump %s Table(%d) @%p\n", name, cnt, rela);
         for (int i = 0; i<cnt; ++i)
             printf_dump(LOG_NEVER, "  %s:RelA[%d] = %p (0x%X: %s, sym=0x%X/%s) Addend=%d\n", elfname,
-                i, (void*)rela[i].r_offset, rela[i].r_info, DumpRelType(ELF32_R_TYPE(rela[i].r_info)), 
-                ELF32_R_SYM(rela[i].r_info), IdxSymName(h, ELF32_R_SYM(rela[i].r_info)), 
+                i, (void*)rela[i].r_offset, rela[i].r_info, DumpRelType(ELF32_R_TYPE(rela[i].r_info)),
+                ELF32_R_SYM(rela[i].r_info), IdxSymName(h, ELF32_R_SYM(rela[i].r_info)),
                 rela[i].r_addend);
         printf_dump(LOG_NEVER, "ELF Dump RelA Table=====\n");
     }
@@ -341,7 +341,7 @@ void DumpRelATable(elfheader_t *h, int cnt, Elf32_Rela *rela, const char* name)
 
 void DumpBinary(char* p, int sz)
 {
-    // dump p as 
+    // dump p as
     // PPPPPPPP XX XX XX ... XX | 0123456789ABCDEF
     unsigned char* d = (unsigned char*)p;
     int delta = ((uintptr_t)p)&0xf;

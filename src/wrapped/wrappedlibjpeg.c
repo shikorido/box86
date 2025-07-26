@@ -19,9 +19,14 @@
 #include "emu/x86emu_private.h"
 #include "myalign.h"
 
-const char* libjpegName = "libjpeg.so.8";
-#define LIBNAME libjpeg
+const char* libjpegName =
+#ifdef ANDROID
+    "libjpeg.so";
+#else
+    "libjpeg.so.8";
 #define ALTNAME "libjpeg.so.62"
+#endif
+#define LIBNAME libjpeg
 
 static bridge_t* my_bridge = NULL;
 
@@ -96,7 +101,7 @@ static jpeg_error_mgr_t native_err_mgr;
     GO(reset_error_mgr)
 
 #define GO(A) \
-        temp_cinfo.err->A = GetNativeFncOrFnc((uintptr_t)cinfo->err->A); 
+        temp_cinfo.err->A = GetNativeFncOrFnc((uintptr_t)cinfo->err->A);
 
 static void native_error_exit(jpeg_common_struct_t* cinfo) {
     SUPER();
@@ -165,7 +170,7 @@ static void* finderror_exitFct(void* fct)
 }
 static void* is_error_exitFct(void* fct)
 {
-    if(!fct) return NULL;    
+    if(!fct) return NULL;
     #define GO(A) if(my_error_exit_##A == fct) return (void*)my_error_exit_fct_##A;
     SUPER()
     #undef GO
@@ -227,7 +232,7 @@ static void* findoutput_messageFct(void* fct)
 }
 static void* is_output_messageFct(void* fct)
 {
-    if(!fct) return NULL;    
+    if(!fct) return NULL;
     #define GO(A) if(my_output_message_##A == fct) return (void*)my_output_message_fct_##A;
     SUPER()
     #undef GO
@@ -258,7 +263,7 @@ static void* findformat_messageFct(void* fct)
 }
 static void* is_format_messageFct(void* fct)
 {
-    if(!fct) return NULL;    
+    if(!fct) return NULL;
     #define GO(A) if(my_format_message_##A == fct) return (void*)my_format_message_fct_##A;
     SUPER()
     #undef GO
@@ -289,7 +294,7 @@ static void* findreset_error_mgrFct(void* fct)
 }
 static void* is_reset_error_mgrFct(void* fct)
 {
-    if(!fct) return NULL;    
+    if(!fct) return NULL;
     #define GO(A) if(my_reset_error_mgr_##A == fct) return (void*)my_reset_error_mgr_fct_##A;
     SUPER()
     #undef GO
@@ -354,7 +359,7 @@ static void unwrapErrorMgr(bridge_t* bridge, jpeg_error_mgr_t* mgr)
         if(!p)                                  \
             p = find##A##Fct(mgr->A);   \
         mgr->A = p;
-        
+
     SUPER()
     #undef GO
 }
