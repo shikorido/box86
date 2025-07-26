@@ -1,5 +1,9 @@
 build/
 build*/
+# We only need the folder itself, otherwise rebuild_wrappers.py will fail
+# I could patch it but whatever.
+src/wrapped/generated/
+lib_ln/
 .vscode
 .gdb_history
 src/git_head.h

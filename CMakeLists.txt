@@ -48,6 +48,9 @@ if(PANDORA OR PYRA OR RPI2 OR RPI3 OR RPI4 OR GAMESHELL OR ODROIDXU4 OR GOA_CLON
 endif()
 if(TERMUX)
     set(ANDROID ON CACHE BOOL "")
+    set(TERMUX_INSTALL ON CACHE BOOL "")
+endif()
+if(TERMUX_INSTALL)
     set(TERMUX_PATH "/data/data/com.termux/files")
 endif()
 if(ANDROID)
@@ -81,7 +84,7 @@ cmake_host_system_information(RESULT CMAKE_HOST_SYSTEM_PROCESSOR QUERY OS_PLATFO
 if("${CMAKE_HOST_SYSTEM_PROCESSOR}" STREQUAL "aarch64" AND (RK3399 OR ODROIDN2 OR TEGRAX1 OR TEGRA_T194 OR TEGRA_T234 OR RPI3ARM64 OR RPI4ARM64 OR PHYTIUM OR SD845 OR SD888 OR ADLINK OR A64 OR LX2160A OR RK3588 OR ARM64))
     set(COMPILER_TRIPLE arm-linux-gnueabihf-gcc)
     find_program(COMPILER_FOUND ${COMPILER_TRIPLE})
-    
+
     if(COMPILER_FOUND)
         set(CMAKE_C_COMPILER ${COMPILER_FOUND})
     else()
@@ -585,6 +588,11 @@ set(WRAPPEDS
 if(ANDROID)
     list(APPEND WRAPPEDS
         "${BOX86_ROOT}/src/wrapped/wrappedandroidshmem.c"
+        #qqq
+        "${BOX86_ROOT}/src/wrapped/wrappedlibjpeg.c"
+        "${BOX86_ROOT}/src/wrapped/wrappedlibjpeg62.c"
+        "${BOX86_ROOT}/src/wrapped/wrappedturbojpeg.c"
+        #!qqq
     )
 else()
     list(APPEND WRAPPEDS
@@ -608,9 +616,9 @@ set(WRAPPER "${BOX86_ROOT}/src/wrapped/generated/wrapper.c" "${BOX86_ROOT}/src/w
 
 add_custom_command(
     OUTPUT "${BOX86_ROOT}/src/wrapped/generated/functions_list.txt"
-    COMMAND "${PYTHON_EXECUTABLE}" "${BOX86_ROOT}/rebuild_wrappers.py" 
-    "${BOX86_ROOT}" 
-    "PANDORA" "HAVE_LD80BITS" "NOALIGN" "HAVE_TRACE" "POWERPCLE" "ANDROID" "TERMUX" "--" 
+    COMMAND "${PYTHON_EXECUTABLE}" "${BOX86_ROOT}/rebuild_wrappers.py"
+    "${BOX86_ROOT}"
+    "PANDORA" "HAVE_LD80BITS" "NOALIGN" "HAVE_TRACE" "POWERPCLE" "ANDROID" "TERMUX" "--"
     ${WRAPPEDS_HEAD}
     MAIN_DEPENDENCY "${BOX86_ROOT}/rebuild_wrappers.py"
     DEPENDS ${WRAPPEDS} ${WRAPPEDS_HEAD}
@@ -691,9 +699,9 @@ if(ARM_DYNAREC)
     add_dependencies(arm_pass2 WRAPPERS)
     add_dependencies(arm_pass3 WRAPPERS)
 
-    add_library(dynarec STATIC 
-        $<TARGET_OBJECTS:dynarec_arm> 
-        $<TARGET_OBJECTS:arm_pass0> 
+    add_library(dynarec STATIC
+        $<TARGET_OBJECTS:dynarec_arm>
+        $<TARGET_OBJECTS:arm_pass0>
         $<TARGET_OBJECTS:arm_pass1>
         $<TARGET_OBJECTS:arm_pass2>
         $<TARGET_OBJECTS:arm_pass3>
@@ -792,38 +800,35 @@ else()
 endif()
 
 if(NOT _x86 AND NOT _x86_64)
-  if(NOT TERMUX)
-   install(TARGETS ${BOX86}
-    RUNTIME DESTINATION bin)
+  if(NOT TERMUX_INSTALL)
+    install(TARGETS ${BOX86} RUNTIME DESTINATION bin)
   else()
-   install(TARGETS ${BOX86}
-    RUNTIME DESTINATION ${TERMUX_PATH}/usr/bin)
+    install(TARGETS ${BOX86} RUNTIME DESTINATION ${TERMUX_PATH}/usr/bin)
   endif()
   if(NOT NO_CONF_INSTALL)
     configure_file(system/box86.conf.cmake system/box86.conf)
-    	if(NOT TERMUX)
-    		install(FILES ${CMAKE_BINARY_DIR}/system/box86.conf DESTINATION /etc/binfmt.d/)
-		install(FILES ${CMAKE_SOURCE_DIR}/system/box86.box86rc DESTINATION /etc/)
-	else()
-		#install(FILES ${CMAKE_BINARY_DIR}/system/box86.conf DESTINATION ${TERMUX_PATH}/usr/etc/binfmt.d/)
-		install(FILES ${CMAKE_SOURCE_DIR}/system/box86.box86rc DESTINATION ${TERMUX_PATH}/usr/etc/)
-	endif()
+    if(NOT TERMUX_INSTALL)
+      install(FILES ${CMAKE_BINARY_DIR}/system/box86.conf DESTINATION /etc/binfmt.d/)
+      install(FILES ${CMAKE_SOURCE_DIR}/system/box86.box86rc DESTINATION /etc/)
+    else()
+      install(FILES ${CMAKE_BINARY_DIR}/system/box86.conf DESTINATION ${TERMUX_PATH}/usr/etc/binfmt.d/)
+      install(FILES ${CMAKE_SOURCE_DIR}/system/box86.box86rc DESTINATION ${TERMUX_PATH}/usr/etc/)
+    endif()
   endif()
   set(INSTALL_PATH "/usr/lib/box86-i386-linux-gnu/")
   if(NOT NO_LIB_INSTALL)
-    if(NOT TERMUX)
-    	install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libstdc++.so.6 DESTINATION ${INSTALL_PATH})
-    	install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libstdc++.so.5 DESTINATION ${INSTALL_PATH})
-    	install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libgcc_s.so.1 DESTINATION ${INSTALL_PATH})
-    	install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libpng12.so.0 DESTINATION ${INSTALL_PATH})
-    	install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libunwind.so.8 DESTINATION ${INSTALL_PATH})
+    if(NOT TERMUX_INSTALL)
+      install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libstdc++.so.6 DESTINATION ${INSTALL_PATH})
+      install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libstdc++.so.5 DESTINATION ${INSTALL_PATH})
+      install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libgcc_s.so.1 DESTINATION ${INSTALL_PATH})
+      install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libpng12.so.0 DESTINATION ${INSTALL_PATH})
+      install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libunwind.so.8 DESTINATION ${INSTALL_PATH})
     else()
-
-	    install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libstdc++.so.6 DESTINATION ${TERMUX_PATH}${INSTALL_PATH})
-	    install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libstdc++.so.5 DESTINATION ${TERMUX_PATH}${INSTALL_PATH})
-	    install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libgcc_s.so.1 DESTINATION ${TERMUX_PATH}${INSTALL_PATH})
-	    install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libpng12.so.0 DESTINATION ${TERMUX_PATH}${INSTALL_PATH})
-	    install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libunwind.so.8 DESTINATION ${TERMUX_PATH}${INSTALL_PATH})
+      install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libstdc++.so.6 DESTINATION ${TERMUX_PATH}${INSTALL_PATH})
+      install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libstdc++.so.5 DESTINATION ${TERMUX_PATH}${INSTALL_PATH})
+      install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libgcc_s.so.1 DESTINATION ${TERMUX_PATH}${INSTALL_PATH})
+      install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libpng12.so.0 DESTINATION ${TERMUX_PATH}${INSTALL_PATH})
+      install(FILES ${CMAKE_SOURCE_DIR}/x86lib/libunwind.so.8 DESTINATION ${TERMUX_PATH}${INSTALL_PATH})
     endif()
   endif()
 endif()
@@ -860,11 +865,11 @@ string(REGEX MATCH "[0-9]" BOX86_REVISION ${TEMP_STRING})
 set(CPACK_PACKAGE_VERSION_MAJOR ${BOX86_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${BOX86_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${BOX86_REVISION})
-if(NOT TERMUX)
+if(NOT TERMUX_INSTALL)
 set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/postinst")
 endif()
 if(_aarch64 OR _armhf OR _arm OR _armv8l)
-    if(TERMUX)
+    if(TERMUX_INSTALL)
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "arm")
     else()
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "armhf")
@@ -875,151 +880,151 @@ else()
     #probably wrong...
     execute_process(COMMAND "dpkg --print-architecture" OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE)
 endif()
-if(TERMUX)
+if(TERMUX_INSTALL)
 set(CPACK_PACKAGING_INSTALL_PREFIX "${TERMUX_PATH}/usr")
 endif()
-if(NOT TERMUX)
+if(NOT TERMUX_INSTALL)
 set(CPACK_DEBIAN_FILE_NAME "${BOX86}-${BOX86_MAJOR}.${BOX86_MINOR}.${BOX86_REVISION}_${CMAKE_SYSTEM_NAME}-${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}.deb")
 else()
 set(CPACK_DEBIAN_FILE_NAME "${BOX86}-${BOX86_MAJOR}.${BOX86_MINOR}.${BOX86_REVISION}_Termux-${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}.deb")
 endif()
 INCLUDE(CPack)
 
-add_test(NAME bootSyscall COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test01 -D TEST_OUTPUT=tmpfile01.txt 
+add_test(NAME bootSyscall COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test01 -D TEST_OUTPUT=tmpfile01.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref01.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME bootSyscallC COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test02 -D TEST_OUTPUT=tmpfile02.txt 
+add_test(NAME bootSyscallC COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test02 -D TEST_OUTPUT=tmpfile02.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref02.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME printf COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test03 -D TEST_OUTPUT=tmpfile03.txt 
+add_test(NAME printf COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test03 -D TEST_OUTPUT=tmpfile03.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref03.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME args COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test04 -D TEST_ARGS2=yeah -D TEST_OUTPUT=tmpfile04.txt 
+add_test(NAME args COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test04 -D TEST_ARGS2=yeah -D TEST_OUTPUT=tmpfile04.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref04.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME maths1 COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test05 -D TEST_ARGS2=7 -D TEST_OUTPUT=tmpfile05.txt 
+add_test(NAME maths1 COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test05 -D TEST_ARGS2=7 -D TEST_OUTPUT=tmpfile05.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref05.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME threadsStart COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test06 -D TEST_OUTPUT=tmpfile06.txt 
+add_test(NAME threadsStart COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test06 -D TEST_OUTPUT=tmpfile06.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref06.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME trig COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test07 -D TEST_OUTPUT=tmpfile07.txt 
+add_test(NAME trig COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test07 -D TEST_OUTPUT=tmpfile07.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref07.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME pi COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test08 -D TEST_OUTPUT=tmpfile08.txt 
+add_test(NAME pi COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test08 -D TEST_OUTPUT=tmpfile08.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref08.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME fork COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test09 -D TEST_OUTPUT=tmpfile09.txt 
+add_test(NAME fork COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test09 -D TEST_OUTPUT=tmpfile09.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref09.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME cppThreads COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test10 -D TEST_OUTPUT=tmpfile10.txt 
+add_test(NAME cppThreads COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test10 -D TEST_OUTPUT=tmpfile10.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref10.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME tlsData COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test11 -D TEST_OUTPUT=tmpfile11.txt 
+add_test(NAME tlsData COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test11 -D TEST_OUTPUT=tmpfile11.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref11.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME fpu COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test12 -D TEST_OUTPUT=tmpfile12.txt 
+add_test(NAME fpu COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test12 -D TEST_OUTPUT=tmpfile12.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref12.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME contexts COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test13 -D TEST_OUTPUT=tmpfile13.txt 
+add_test(NAME contexts COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test13 -D TEST_OUTPUT=tmpfile13.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref13.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
 if(NOT LD80BITS)
-    add_test(NAME conditionalThreads COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-        -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test14 -D TEST_OUTPUT=tmpfile14.txt 
+    add_test(NAME conditionalThreads COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+        -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test14 -D TEST_OUTPUT=tmpfile14.txt
         -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref14.txt
         -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 endif()
 
-add_test(NAME linkingIndirectNoversion COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test15 -D TEST_OUTPUT=tmpfile15.txt 
+add_test(NAME linkingIndirectNoversion COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test15 -D TEST_OUTPUT=tmpfile15.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref15.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME linkingIndirectVersion COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test16 -D TEST_OUTPUT=tmpfile16.txt 
+add_test(NAME linkingIndirectVersion COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test16 -D TEST_OUTPUT=tmpfile16.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref16.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME sse COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test17 -D TEST_OUTPUT=tmpfile17.txt 
+add_test(NAME sse COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test17 -D TEST_OUTPUT=tmpfile17.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref17.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
 set_tests_properties(sse PROPERTIES ENVIRONMENT "BOX86_DYNAREC_FASTNAN=0;BOX86_DYNAREC_FASTROUND=0")
 
-add_test(NAME longjumpInSignals COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test18 -D TEST_OUTPUT=tmpfile18.txt 
+add_test(NAME longjumpInSignals COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test18 -D TEST_OUTPUT=tmpfile18.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref18.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME x87 COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test19 -D TEST_OUTPUT=tmpfile19.txt 
+add_test(NAME x87 COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test19 -D TEST_OUTPUT=tmpfile19.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref19.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME idiv COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test20 -D TEST_OUTPUT=tmpfile20.txt 
+add_test(NAME idiv COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test20 -D TEST_OUTPUT=tmpfile20.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref20.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME multiple_dlopen COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test21 -D TEST_OUTPUT=tmpfile21.txt 
+add_test(NAME multiple_dlopen COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test21 -D TEST_OUTPUT=tmpfile21.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref21.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-add_test(NAME aes COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test22 -D TEST_OUTPUT=tmpfile22.txt 
+add_test(NAME aes COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test22 -D TEST_OUTPUT=tmpfile22.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref22.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-file(GLOB extension_tests "${CMAKE_SOURCE_DIR}/tests/extensions/*.c")    
+file(GLOB extension_tests "${CMAKE_SOURCE_DIR}/tests/extensions/*.c")
 foreach(file ${extension_tests})
     get_filename_component(testname "${file}" NAME_WE)
     add_test(NAME "${testname}" COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
         -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/extensions/${testname} -D TEST_OUTPUT=tmpfile-${testname}.txt
         -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/extensions/${testname}.txt
         -P ${CMAKE_SOURCE_DIR}/runTest.cmake)
-endforeach()        
+endforeach()
 
-add_test(NAME sse_optimized COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86} 
-    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test17_o2 -D TEST_OUTPUT=tmpfile17_o2.txt 
+add_test(NAME sse_optimized COMMAND ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
+    -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test17_o2 -D TEST_OUTPUT=tmpfile17_o2.txt
     -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref17_o2.txt
     -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
-set_tests_properties(sse_optimized PROPERTIES ENVIRONMENT "BOX86_DYNAREC_FASTNAN=0;BOX86_DYNAREC_FASTROUND=0")    
-    
+set_tests_properties(sse_optimized PROPERTIES ENVIRONMENT "BOX86_DYNAREC_FASTNAN=0;BOX86_DYNAREC_FASTROUND=0")
+
 add_test(bswap ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
         -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test23 -D TEST_OUTPUT=tmpfile23.txt
         -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref23.txt
         -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
-    
+
 add_test(feround ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX86}
         -D TEST_ARGS=${CMAKE_SOURCE_DIR}/tests/test24 -D TEST_OUTPUT=tmpfile24.txt
         -D TEST_REFERENCE=${CMAKE_SOURCE_DIR}/tests/ref24.txt
@@ -1036,5 +1041,5 @@ add_test(fpu_rounding ${CMAKE_COMMAND} -D TEST_PROGRAM=${CMAKE_BINARY_DIR}/${BOX
         -P ${CMAKE_SOURCE_DIR}/runTest.cmake )
 
 set_tests_properties(fpu_rounding PROPERTIES ENVIRONMENT "BOX86_DYNAREC_FASTROUND=0")
-    
+
 endif(BOX86LIB)

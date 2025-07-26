@@ -19,7 +19,12 @@
 #include "emu/x86emu_private.h"
 #include "myalign.h"
 
-const char* turbojpegName = "libturbojpeg.so.0";
+const char* turbojpegName =
+#ifdef ANDROID
+    "libturbojpeg.so";
+#else
+    "libturbojpeg.so.0";
+#endif
 #define LIBNAME turbojpeg
 
 #define CUSTOM_INIT \

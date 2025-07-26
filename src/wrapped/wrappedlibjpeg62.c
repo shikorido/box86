@@ -20,9 +20,14 @@
 #include "emu/x86emu_private.h"
 #include "myalign.h"
 
-const char* libjpeg62Name = "libjpeg.so.62";
-#define LIBNAME libjpeg62
+const char* libjpeg62Name =
+#ifdef ANDROID
+    "libjpeg.so";
+#else
+    "libjpeg.so.62";
 #define ALTNAME "libjpeg.so.8"
+#endif
+#define LIBNAME libjpeg62
 
 static bridge_t* my_bridge = NULL;
 
@@ -279,7 +284,7 @@ static jpeg62_error_mgr_t native_err_mgr;
     GO(reset_error_mgr)
 
 #define GO(A) \
-        temp_cinfo.err->A = GetNativeFncOrFnc((uintptr_t)cinfo->err->A); 
+        temp_cinfo.err->A = GetNativeFncOrFnc((uintptr_t)cinfo->err->A);
 
 static void native_error_exit(jpeg62_common_struct_t* cinfo) {
     SUPER();
@@ -1315,7 +1320,7 @@ static void unwrapErrorMgr(jpeg62_error_mgr_t* mgr)
         return;
 
     #define GO(A)    mgr->A = find##A##Fct(mgr->A);
-        
+
     SUPER()
     #undef GO
 }
@@ -1351,7 +1356,7 @@ static void unwrapMemoryMgr(jpeg62_memory_mgr_t* mgr)
         return;
 
     #define GO(A)    mgr->A = find##A##Fct(mgr->A);
-        
+
     SUPER()
     #undef GO
 }
@@ -1381,7 +1386,7 @@ static void unwrapSourceMgr(jpeg62_source_mgr_t* mgr)
         return;
 
     #define GO(A)    mgr->A = find##A##Fct(mgr->A);
-        
+
     SUPER()
     #undef GO
 }
@@ -1409,7 +1414,7 @@ static void unwrapDestinationMgr(jpeg62_destination_mgr_t* mgr)
         return;
 
     #define GO(A)    mgr->A = find##A##Fct(mgr->A);
-        
+
     SUPER()
     #undef GO
 }
